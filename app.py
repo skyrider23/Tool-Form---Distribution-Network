@@ -98,7 +98,7 @@ col1, col2 = st.columns([1, 2])
 with col1:
     st.subheader("👤 Employee Details")
 
-    emp_num = st.text_input("Employee Number")
+    emp_num = st.text_input("Employee Number", key="emp_number_input")
 
     if emp_num:
         df_emp = employees_df.copy()
@@ -197,17 +197,24 @@ if "emp_data" in st.session_state:
                 except Exception as e:
                     st.warning(f"Could not write requests.xlsx: {e}")
 
-                st.success(f"{len(new_rows)} request(s) submitted.")
+                                st.success(f"{len(new_rows)} request(s) submitted.")
                 st.balloons()
 
                 # -------- CLEAR FORM & REFRESH PAGE --------
+                # remove stored employee data
                 st.session_state.pop("emp_data", None)
-                # clear all tool checkboxes & qty inputs by removing their keys
+
+                # clear all tool checkboxes & qty inputs
                 for tname in tools_for_desig["ToolName"]:
                     st.session_state.pop(f"chk_{tname}", None)
                     st.session_state.pop(f"qty_{tname}", None)
-                # also clear employee number input
-                st.session_state["Employee Number"] = ""
+
+                # clear employee number input
+                st.session_state["emp_number_input"] = ""
+
+                # optional: reset password attempts too
+                st.session_state["download_attempts"] = 0
+
                 st.rerun()
 
 else:
