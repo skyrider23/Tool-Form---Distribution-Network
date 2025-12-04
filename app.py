@@ -3,11 +3,13 @@ import pandas as pd
 import io
 from datetime import datetime
 
+
 st.set_page_config(
     page_title="K-Electric Distribution Network Tool Form",
     layout="wide"
 )
 st.title("🔧 K-Electric Distribution Network Tool Form")
+
 
 @st.cache_data
 def load_data():
@@ -77,6 +79,10 @@ employees_df, tools_df, requests_df_initial = load_data()
 
 if "requests_df" not in st.session_state:
     st.session_state["requests_df"] = requests_df_initial.copy()
+
+# ---------- init password attempts ----------
+if "download_attempts" not in st.session_state:
+    st.session_state["download_attempts"] = 0
 
 with st.sidebar:
     st.info(
@@ -193,6 +199,17 @@ if "emp_data" in st.session_state:
 
                 st.success(f"{len(new_rows)} request(s) submitted.")
                 st.balloons()
+
+                # -------- CLEAR FORM & REFRESH PAGE --------
+                st.session_state.pop("emp_data", None)
+                # clear all tool checkboxes & qty inputs by removing their keys
+                for tname in tools_for_desig["ToolName"]:
+                    st.session_state.pop(f"chk_{tname}", None)
+                    st.session_state.pop(f"qty_{tname}", None)
+                # also clear employee number input
+                st.session_state["Employee Number"] = ""
+                st.rerun()
+
 else:
     st.info("Enter a valid Employee Number first.")
 
@@ -201,18 +218,35 @@ st.markdown("---")
 st.subheader("📥 Export Requests")
 
 if not st.session_state["requests_df"].empty:
-    export_output = io.BytesIO()
-    with pd.ExcelWriter(export_output, engine="openpyxl") as writer:
-        st.session_state["requests_df"].to_excel(
-            writer, sheet_name="Requests", index=False
-        )
+    # password gate
+    pwd = st.text_input("Enter password to download requests.xlsx", type="password")
+    if st.button("Unlock download"):
+        if pwd == "2313":
+            st.session_state["download_attempts"] = 0
+            st.success("Password correct. You can download the file below.")
+        else:
+            st.session_state["download_attempts"] += 1
+            attempts_left = 3 - st.session_state["download_attempts"]
+            if attempts_left > 0:
+                st.error(f"Wrong password. Attempts left: {attempts_left}")
+            else:
+                st.error("3 wrong attempts. Refreshing the page.")
+                st.session_state["download_attempts"] = 0
+                st.rerun()
 
-    st.download_button(
-        "Download all requests.xlsx",
-        data=export_output.getvalue(),
-        file_name="requests.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
+    if st.session_state["download_attempts"] < 3 and pwd == "2313":
+        export_output = io.BytesIO()
+        with pd.ExcelWriter(export_output, engine="openpyxl") as writer:
+            st.session_state["requests_df"].to_excel(
+                writer, sheet_name="Requests", index=False
+            )
+
+        st.download_button(
+            "Download all requests.xlsx",
+            data=export_output.getvalue(),
+            file_name="requests.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
 else:
     st.info("No requests yet to download.")
 
