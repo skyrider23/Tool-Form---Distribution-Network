@@ -3,13 +3,16 @@ import pandas as pd
 import io
 from datetime import datetime
 
-st.set_page_config(page_title="K-Electric Distribution Network Tool Form", layout="wide")
+st.set_page_config(
+    page_title="K-Electric Distribution Network Tool Form",
+    layout="wide"
+)
 st.title("🔧 K-Electric Distribution Network Tool Form")
 
 @st.cache_data
 def load_data():
     """
-    Load employees, tools and existing requests from absolute paths.
+    Load employees, tools and existing requests.
     """
 
     # ---------- EMPLOYEES ----------
@@ -69,6 +72,7 @@ def load_data():
 
     return employees, tools, requests
 
+
 employees_df, tools_df, requests_df_initial = load_data()
 
 if "requests_df" not in st.session_state:
@@ -91,7 +95,6 @@ with col1:
     emp_num = st.text_input("Employee Number")
 
     if emp_num:
-        # ensure EmployeeNumber is string for matching
         df_emp = employees_df.copy()
         df_emp["EmployeeNumber"] = df_emp["EmployeeNumber"].astype(str)
 
@@ -101,7 +104,6 @@ with col1:
             rec = row.iloc[0]
             st.success("Employee found")
 
-            # LOCKED display (labels only, user cannot edit)
             c1, c2_, c3 = st.columns(3)
             with c1:
                 st.text("Name")
@@ -152,6 +154,7 @@ if "emp_data" in st.session_state:
                     )
                     tool_selections[tname] = qty
 
+        # ---------- SUBMIT ----------
         if st.button("💾 Submit Request", type="primary"):
             if not tool_selections:
                 st.warning("Select at least one tool.")
@@ -180,23 +183,38 @@ if "emp_data" in st.session_state:
                     ignore_index=True,
                 )
 
-                output = io.BytesIO()
-                with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                # Save full history to requests.xlsx
+                try:
                     st.session_state["requests_df"].to_excel(
-                        writer, sheet_name="Requests", index=False
+                        "requests.xlsx", sheet_name="Requests", index=False
                     )
-
-                st.download_button(
-                    "📥 Download Updated requests.xlsx",
-                    data=output.getvalue(),
-                    file_name="requests.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                )
+                except Exception as e:
+                    st.warning(f"Could not write requests.xlsx: {e}")
 
                 st.success(f"{len(new_rows)} request(s) submitted.")
                 st.balloons()
 else:
     st.info("Enter a valid Employee Number first.")
+
+# ========== ALWAYS-AVAILABLE DOWNLOAD BUTTON ==========
+st.markdown("---")
+st.subheader("📥 Export Requests")
+
+if not st.session_state["requests_df"].empty:
+    export_output = io.BytesIO()
+    with pd.ExcelWriter(export_output, engine="openpyxl") as writer:
+        st.session_state["requests_df"].to_excel(
+            writer, sheet_name="Requests", index=False
+        )
+
+    st.download_button(
+        "Download all requests.xlsx",
+        data=export_output.getvalue(),
+        file_name="requests.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+else:
+    st.info("No requests yet to download.")
 
 # ========== DASHBOARD & RECENT REQUESTS ==========
 st.markdown("---")
@@ -205,7 +223,6 @@ st.subheader("📊 Requests Dashboard")
 if not st.session_state["requests_df"].empty:
     df = st.session_state["requests_df"]
 
-    # --- KPI cards ---
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         st.metric("Total Requests", len(df))
@@ -227,10 +244,10 @@ if not st.session_state["requests_df"].empty:
     st.dataframe(
         df.tail(50)[
             [
-                "Employee Number",
+                "EmployeeNumber",
                 "Name",
                 "Designation",
-                "Tool Name",
+                "ToolName",
                 "Quantity",
                 "AOC",
                 "Date",
