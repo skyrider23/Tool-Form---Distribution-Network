@@ -197,7 +197,7 @@ if "emp_data" in st.session_state:
                 except Exception as e:
                     st.warning(f"Could not write requests.xlsx: {e}")
 
-                                st.success(f"{len(new_rows)} request(s) submitted.")
+                    st.success(f"{len(new_rows)} request(s) submitted.")
                 st.balloons()
 
                 # -------- CLEAR FORM & REFRESH PAGE --------
