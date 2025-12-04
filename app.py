@@ -59,7 +59,7 @@ def load_data():
                 "Name",
                 "Designation",
                 "Cluster",
-                "Office",
+                "AOC",
                 "ToolName",
                 "Quantity",
                 "Date",
@@ -77,7 +77,7 @@ if "requests_df" not in st.session_state:
 with st.sidebar:
     st.info(
         "1. Enter Employee Number\n"
-        "2. Office select\n"
+        "2. AOC select\n"
         "3. Tick tools & qty\n"
         "4. Submit"
     )
@@ -120,9 +120,9 @@ with col1:
                 del st.session_state["emp_data"]
 
 with col2:
-    st.subheader("🏢 Office")
+    st.subheader("🏢 AOC")
     offices = ["Industrial Zone 1", "Industrial Zone 2", "Gizri", "Defence", "Korangi"]
-    selected_office = st.selectbox("Select Office", offices)
+    selected_office = st.selectbox("Select AOC", offices)
 
 # ========== TOOLS BY DESIGNATION ==========
 if "emp_data" in st.session_state:
@@ -165,7 +165,7 @@ if "emp_data" in st.session_state:
                             "Name": emp["Name"],
                             "Designation": emp["Designation"],
                             "Cluster": emp["Cluster"],
-                            "Office": selected_office,
+                            "AOC": selected_office,
                             "ToolName": tool_name,
                             "Quantity": qty,
                             "Date": datetime.now().strftime(
@@ -227,12 +227,12 @@ if not st.session_state["requests_df"].empty:
     st.dataframe(
         df.tail(50)[
             [
-                "EmployeeNumber",
+                "Employee Number",
                 "Name",
                 "Designation",
-                "ToolName",
+                "Tool Name",
                 "Quantity",
-                "Office",
+                "AOC",
                 "Date",
                 "Status",
             ]
