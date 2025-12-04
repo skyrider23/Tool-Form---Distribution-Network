@@ -14,9 +14,7 @@ def load_data():
 
     # ---------- EMPLOYEES ----------
     try:
-        employees = pd.read_excel(
-            r"C:\Users\PAK GAMERZ STORE\Desktop\Apps\employees.xlsx"
-        )
+        employees = pd.read_excel("employees.xlsx")
         employees.columns = [c.strip() for c in employees.columns]
         employees = employees.rename(
             columns={
@@ -36,9 +34,7 @@ def load_data():
 
     # ---------- TOOLS ----------
     try:
-        tools = pd.read_excel(
-            r"C:\Users\PAK GAMERZ STORE\Desktop\Apps\Tool_mapping.xlsx"
-        )
+        tools = pd.read_excel("Tool_mapping.xlsx")
         tools.columns = [c.strip() for c in tools.columns]
         tools = tools.rename(
             columns={
