@@ -1,8 +1,10 @@
 import streamlit as st
 import pandas as pd
 import io
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
+# Pakistan Standard Time (UTC+5)
+PST = timezone(timedelta(hours=5))
 
 st.set_page_config(
     page_title="K-Electric Distribution Network Tool Form",
@@ -67,7 +69,7 @@ def load_data():
                 "AOC",
                 "ToolName",
                 "Quantity",
-                "Date",
+                "Timestamp",
                 "Status",
             ]
         )
@@ -80,9 +82,22 @@ employees_df, tools_df, requests_df_initial = load_data()
 if "requests_df" not in st.session_state:
     st.session_state["requests_df"] = requests_df_initial.copy()
 
-# init password attempts
+# init flags and counters
 if "download_attempts" not in st.session_state:
     st.session_state["download_attempts"] = 0
+if "download_ok" not in st.session_state:
+    st.session_state["download_ok"] = False
+if "reset_form" not in st.session_state:
+    st.session_state["reset_form"] = False
+
+# reset form (except employee number) on new run if flagged
+if st.session_state["reset_form"]:
+    st.session_state.pop("emp_data", None)
+    for key in list(st.session_state.keys()):
+        if key.startswith("chk_") or key.startswith("qty_"):
+            st.session_state.pop(key)
+    # keep emp_number_input as-is
+    st.session_state["reset_form"] = False
 
 with st.sidebar:
     st.info(
@@ -98,7 +113,6 @@ col1, col2 = st.columns([1, 2])
 with col1:
     st.subheader("👤 Employee Details")
 
-    # keyed input so we can clear it
     emp_num = st.text_input("Employee Number", key="emp_number_input")
 
     if emp_num:
@@ -168,6 +182,7 @@ if "emp_data" in st.session_state:
             else:
                 emp = st.session_state["emp_data"]
                 new_rows = []
+                timestamp_str = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
                 for tool_name, qty in tool_selections.items():
                     new_rows.append(
                         {
@@ -178,9 +193,7 @@ if "emp_data" in st.session_state:
                             "AOC": selected_office,
                             "ToolName": tool_name,
                             "Quantity": qty,
-                            "Date": datetime.now().strftime(
-                                "%Y-%m-%d %H:%M:%S"
-                            ),
+                            "Timestamp": timestamp_str,
                             "Status": "Submitted",
                         }
                     )
@@ -201,16 +214,10 @@ if "emp_data" in st.session_state:
                 st.success(f"{len(new_rows)} request(s) submitted.")
                 st.balloons()
 
-                # -------- CLEAR FORM & REFRESH PAGE --------
-                st.session_state.pop("emp_data", None)
-                # clear all tool checkboxes & qty inputs
-                for tname in tools_for_desig["ToolName"]:
-                    st.session_state.pop(f"chk_{tname}", None)
-                    st.session_state.pop(f"qty_{tname}", None)
-                # clear employee number input
-                st.session_state["emp_number_input"] = ""
-                # reset download attempts
+                # ask next run to reset tools and emp_data (keep employee number)
+                st.session_state["reset_form"] = True
                 st.session_state["download_attempts"] = 0
+                st.session_state["download_ok"] = False
 
                 st.rerun()
 else:
@@ -225,8 +232,8 @@ if not st.session_state["requests_df"].empty:
     if st.button("Unlock download"):
         if pwd == "2313":
             st.session_state["download_attempts"] = 0
-            st.success("Password correct. You can download the file below.")
             st.session_state["download_ok"] = True
+            st.success("Password correct. You can download the file below.")
         else:
             st.session_state["download_attempts"] += 1
             st.session_state["download_ok"] = False
@@ -273,10 +280,10 @@ if not st.session_state["requests_df"].empty:
             int((df["Designation"] == "Technician").sum()),
         )
     with c4:
-        today = datetime.now().strftime("%Y-%m-%d")
+        today = datetime.now(PST).strftime("%Y-%m-%d")
         st.metric(
             "Today's Requests",
-            int(df["Date"].astype(str).str.contains(today).sum()),
+            int(df["Timestamp"].astype(str).str.contains(today).sum()),
         )
 
     st.markdown("### 📄 Recent Requests (Last 50)")
@@ -289,7 +296,7 @@ if not st.session_state["requests_df"].empty:
                 "ToolName",
                 "Quantity",
                 "AOC",
-                "Date",
+                "Timestamp",
                 "Status",
             ]
         ],
