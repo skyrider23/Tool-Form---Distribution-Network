@@ -80,7 +80,7 @@ employees_df, tools_df, requests_df_initial = load_data()
 if "requests_df" not in st.session_state:
     st.session_state["requests_df"] = requests_df_initial.copy()
 
-# ---------- init password attempts ----------
+# init password attempts
 if "download_attempts" not in st.session_state:
     st.session_state["download_attempts"] = 0
 
@@ -98,6 +98,7 @@ col1, col2 = st.columns([1, 2])
 with col1:
     st.subheader("👤 Employee Details")
 
+    # keyed input so we can clear it
     emp_num = st.text_input("Employee Number", key="emp_number_input")
 
     if emp_num:
@@ -197,26 +198,21 @@ if "emp_data" in st.session_state:
                 except Exception as e:
                     st.warning(f"Could not write requests.xlsx: {e}")
 
-                    st.success(f"{len(new_rows)} request(s) submitted.")
+                st.success(f"{len(new_rows)} request(s) submitted.")
                 st.balloons()
 
                 # -------- CLEAR FORM & REFRESH PAGE --------
-                # remove stored employee data
                 st.session_state.pop("emp_data", None)
-
                 # clear all tool checkboxes & qty inputs
                 for tname in tools_for_desig["ToolName"]:
                     st.session_state.pop(f"chk_{tname}", None)
                     st.session_state.pop(f"qty_{tname}", None)
-
                 # clear employee number input
                 st.session_state["emp_number_input"] = ""
-
-                # optional: reset password attempts too
+                # reset download attempts
                 st.session_state["download_attempts"] = 0
 
                 st.rerun()
-
 else:
     st.info("Enter a valid Employee Number first.")
 
@@ -225,14 +221,15 @@ st.markdown("---")
 st.subheader("📥 Export Requests")
 
 if not st.session_state["requests_df"].empty:
-    # password gate
     pwd = st.text_input("Enter password to download requests.xlsx", type="password")
     if st.button("Unlock download"):
         if pwd == "2313":
             st.session_state["download_attempts"] = 0
             st.success("Password correct. You can download the file below.")
+            st.session_state["download_ok"] = True
         else:
             st.session_state["download_attempts"] += 1
+            st.session_state["download_ok"] = False
             attempts_left = 3 - st.session_state["download_attempts"]
             if attempts_left > 0:
                 st.error(f"Wrong password. Attempts left: {attempts_left}")
@@ -241,7 +238,7 @@ if not st.session_state["requests_df"].empty:
                 st.session_state["download_attempts"] = 0
                 st.rerun()
 
-    if st.session_state["download_attempts"] < 3 and pwd == "2313":
+    if st.session_state.get("download_ok"):
         export_output = io.BytesIO()
         with pd.ExcelWriter(export_output, engine="openpyxl") as writer:
             st.session_state["requests_df"].to_excel(
