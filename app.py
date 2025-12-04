@@ -223,6 +223,7 @@ st.subheader("📊 Requests Dashboard")
 if not st.session_state["requests_df"].empty:
     df = st.session_state["requests_df"]
 
+    # --- KPI cards ---
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         st.metric("Total Requests", len(df))
