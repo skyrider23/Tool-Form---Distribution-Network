@@ -269,22 +269,18 @@ if not st.session_state["requests_df"].empty:
     df = st.session_state["requests_df"]
 
     # --- KPI cards ---
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3 = st.columns(3)
     with c1:
         st.metric("Total Requests", len(df))
     with c2:
         st.metric("Submitted", int((df["Status"] == "Submitted").sum()))
     with c3:
-        st.metric(
-            "Technician Requests",
-            int((df["Designation"] == "Technician").sum()),
-        )
-    with c4:
         today = datetime.now(PST).strftime("%Y-%m-%d")
         st.metric(
             "Today's Requests",
             int(df["Timestamp"].astype(str).str.contains(today).sum()),
         )
+        
 
     st.markdown("### 📄 Recent Requests (Last 50)")
     st.dataframe(
